@@ -2,6 +2,17 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "../component/navbar"
+import { Roboto, Poppins, Montserrat, Lora, Open_Sans, Inter, Playfair_Display, Nunito } from "next/font/google";
+
+const roboto = Roboto({ subsets: ["latin"], weight: ["400", "700"] });
+const poppins = Poppins({ subsets: ["latin"], weight: ["400", "700"] });
+const montserrat = Montserrat({ subsets: ["latin"], weight: ["400", "700"] });
+const lora = Lora({ subsets: ["latin"], weight: ["400", "700"] });
+const openSans = Open_Sans({ subsets: ["latin"], weight: ["400", "700"] });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "700"] });
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "700"] });
+const nunito = Nunito({ subsets: ["latin"], weight: ["400", "700"] });
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${lora.className} min-h-screen`}>
         <Navbar/>
         {children}
       </body>
