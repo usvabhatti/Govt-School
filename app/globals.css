@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+.circle-face {
+  display: inline-block;
+  border: 4px solid #00B9D1;
+  border-radius: 50%;
+  width: 140px;
+  height: 140px;
+  margin-top: 30px;
+}
+
+.circle-face > * {
+  display: inline-block;
+  width: 140px;
+  height: 170px;            /* taller so head pops out */
+  margin-top: -30px;        /* shift upward */
+  background: none no-repeat center bottom / 170px;
+  border-radius: 0 0 70px 70px;  /* bottom clipped, top free */
+}
