@@ -7,7 +7,7 @@ export default function TopBar() {
       <div className="flex items-center space-x-4">
         <img
           className="h-14 w-auto"
-          src="/School_logo.png"
+          src="/School_Logo.png"
           alt="GOVT HIGH SCHOOL NO.01 HASILPUR LOGO"
         />
         <h1 className="text-base sm:text-xl md:text-2xl font-extrabold text-green-900 tracking-wide text-center md:text-left">

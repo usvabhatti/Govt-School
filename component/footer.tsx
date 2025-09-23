@@ -12,7 +12,7 @@ export default function Footer() {
         {/* Logo + Tagline */}
         <div>
           <div className="flex items-center space-x-3">
-            <Image src="/School_logo.png" width={60} height={60} alt="School Logo" className="rounded-lg" />
+            <Image src="/School_Logo.png" width={60} height={60} alt="School Logo" className="rounded-lg" />
             <h2 className="text-xl font-bold text-white">Govt. High School No.1 Hasilpur</h2>
           </div>
           <p className="mt-3 text-sm text-gray-300 leading-relaxed">
