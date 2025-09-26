@@ -166,7 +166,7 @@ const StudentPage = () => {
             {/* Right Side: Optimized Next.js Image */}
             <div className="flex justify-center md:justify-end">
               <Image
-                src="https://i.postimg.cc/Kj79G72P/student-Login.png"
+                src="/st_login_img.png"
                 alt="Student"
                 width={240}
                 height={240}
