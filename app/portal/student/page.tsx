@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import { Eye, EyeOff } from "lucide-react";
 
-// ✅ Define proper type for Student
+//  Define proper type for Student
 interface Student {
   id: number;
   name: string;
@@ -29,6 +29,7 @@ interface Student {
 const StudentPage = () => {
   const router = useRouter();
   const [user, setUser] = useState<Student | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   // loading + login form states
   const [loading, setLoading] = useState(true);
@@ -68,6 +69,7 @@ const StudentPage = () => {
 
     localStorage.setItem("studentUser", JSON.stringify(fakeUser));
     setUser(fakeUser);
+    setLoggedIn(true);
   };
 
   const handleLogout = () => {
@@ -75,6 +77,7 @@ const StudentPage = () => {
     setUser(null);
     setCnic("");
     setPassword("");
+    setLoggedIn(false);
   };
 
   const marksData = [
@@ -115,7 +118,7 @@ const StudentPage = () => {
       {/* If not logged in → show login form */}
       {!user ? (
         <div className="min-h-[70vh] flex items-center justify-center">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div className="bg-amber-100 p-6 sm:p-8 rounded-3xl shadow-xl w-[700px] max-w-md grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             {/* Left Side: Form */}
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-green-600 mb-6 text-center md:text-left">
@@ -158,9 +161,20 @@ const StudentPage = () => {
               </div>
 
               {/* Login Button */}
-              <Button className="w-full" onClick={handleLogin}>
+              {/* <Button className="w-full" onClick={handleLogin}>
                 Login
-              </Button>
+              </Button> */}
+
+              <button
+            onClick={handleLogin}
+            className={`w-full py-2 rounded-md font-semibold transition-colors ${
+              loggedIn
+                ? "bg-white text-green-500 border border-green-500"
+                : "bg-green-500 text-white"
+            }`}
+          >
+            {loggedIn ? "Login Successful" : "Login"}
+          </button>
             </div>
 
             {/* Right Side: Optimized Next.js Image */}
