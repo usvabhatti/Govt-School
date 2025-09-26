@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,9 +17,18 @@ import {
 } from "recharts";
 import { Eye, EyeOff } from "lucide-react";
 
+// ✅ Define proper type for Student
+interface Student {
+  id: number;
+  name: string;
+  cnic: string;
+  attendance: number;
+  marks: number;
+}
+
 const StudentPage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<Student | null>(null);
 
   // loading + login form states
   const [loading, setLoading] = useState(true);
@@ -31,7 +41,7 @@ const StudentPage = () => {
     setTimeout(() => {
       const stored = localStorage.getItem("studentUser");
       if (stored) {
-        setUser(JSON.parse(stored));
+        setUser(JSON.parse(stored) as Student);
       }
       setLoading(false);
     }, 1200);
@@ -48,7 +58,7 @@ const StudentPage = () => {
       return;
     }
 
-    const fakeUser = {
+    const fakeUser: Student = {
       id: 1,
       name: "Ali",
       cnic,
@@ -61,7 +71,7 @@ const StudentPage = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("studentUser"); // ✅ unified key
+    localStorage.removeItem("studentUser");
     setUser(null);
     setCnic("");
     setPassword("");
@@ -153,12 +163,14 @@ const StudentPage = () => {
               </Button>
             </div>
 
-            {/* Right Side: Image */}
+            {/* Right Side: Optimized Next.js Image */}
             <div className="flex justify-center md:justify-end">
-              <img
+              <Image
                 src="https://i.postimg.cc/Kj79G72P/student-Login.png"
                 alt="Student"
-                className="rounded-full shadow-md w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60 object-cover"
+                width={240}
+                height={240}
+                className="rounded-full shadow-md object-cover"
               />
             </div>
           </div>

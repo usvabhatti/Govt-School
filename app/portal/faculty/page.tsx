@@ -3,11 +3,30 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Eye, EyeOff, School, BookOpen, LogOut } from "lucide-react";
 
+// Types
+interface TeachingCourse {
+  course: string;
+  section: string;
+}
+
+interface InChargeClass {
+  name: string;
+  section: string;
+}
+
+interface Faculty {
+  id: number;
+  name: string;
+  cnic: string;
+  designation: string;
+  inCharge: InChargeClass[];
+  teaching: TeachingCourse[];
+}
+
 const FacultyPage = () => {
-  const [faculty, setFaculty] = useState<any>(null);
+  const [faculty, setFaculty] = useState<Faculty | null>(null);
   const [loading, setLoading] = useState(true);
 
   // login form states
@@ -19,7 +38,7 @@ const FacultyPage = () => {
     setTimeout(() => {
       const stored = localStorage.getItem("facultyUser");
       if (stored) {
-        setFaculty(JSON.parse(stored));
+        setFaculty(JSON.parse(stored) as Faculty);
       }
       setLoading(false);
     }, 1000);
@@ -35,15 +54,19 @@ const FacultyPage = () => {
       return;
     }
 
-    const fakeFaculty = {
+    const fakeFaculty: Faculty = {
       id: 101,
       name: "Dr. Ahmed Khan",
       cnic,
       designation: "Assistant Professor",
-      inChargeClass: "BSCS 5th Semester - Section A",
+      inCharge: [
+        { name: "BSCS 5th Semester", section: "A" },
+        { name: "BSCS 3rd Semester", section: "B" },
+      ],
       teaching: [
         { course: "Data Structures", section: "BSCS-5A" },
         { course: "Database Systems", section: "BSCS-3B" },
+        { course: "Operating Systems", section: "BSCS-5A" },
       ],
     };
 
@@ -82,61 +105,49 @@ const FacultyPage = () => {
         ) : null}
       </header>
 
-      {/* Login form */}
+      {/* Login Form */}
       {!faculty ? (
         <div className="min-h-[70vh] flex items-center justify-center">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            {/* Left Side: Form */}
-            <div>
-              <h2 className="text-2xl font-bold text-green-600 mb-6 text-center md:text-left">
-                Faculty Login
-              </h2>
+          <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl w-full max-w-md">
+            <h2 className="text-2xl font-bold text-green-600 mb-6 text-center">
+              Faculty Login
+            </h2>
 
-              {/* CNIC Field */}
-              <div className="mb-4 text-left">
-                <label className="block mb-1 font-semibold">CNIC</label>
-                <input
-                  type="text"
-                  placeholder="Enter 13 digit CNIC"
-                  value={cnic}
-                  onChange={(e) => setCnic(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md 
-                             focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base"
-                />
-              </div>
-
-              {/* Password Field */}
-              <div className="mb-6 relative text-left">
-                <label className="block mb-1 font-semibold">Password</label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md 
-                             focus:outline-none focus:ring-2 focus:ring-green-400 pr-10 text-sm sm:text-base"
-                />
-                <span
-                  className="absolute right-3 top-9 cursor-pointer"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff /> : <Eye />}
-                </span>
-              </div>
-
-              <Button className="w-full" onClick={handleLogin}>
-                Login
-              </Button>
-            </div>
-
-            {/* Right Side: Image */}
-            <div className="flex justify-center md:justify-end">
-              <img
-                src="https://i.postimg.cc/1zMnbNcv/teacher-Login.png"
-                alt="Faculty"
-                className="rounded-full shadow-md w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60 object-cover"
+            {/* CNIC Field */}
+            <div className="mb-4 text-left">
+              <label className="block mb-1 font-semibold">CNIC</label>
+              <input
+                type="text"
+                placeholder="Enter 13 digit CNIC"
+                value={cnic}
+                onChange={(e) => setCnic(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md 
+                           focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base"
               />
             </div>
+
+            {/* Password Field */}
+            <div className="mb-6 relative text-left">
+              <label className="block mb-1 font-semibold">Password</label>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md 
+                           focus:outline-none focus:ring-2 focus:ring-green-400 pr-10 text-sm sm:text-base"
+              />
+              <span
+                className="absolute right-3 top-9 cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </span>
+            </div>
+
+            <Button className="w-full" onClick={handleLogin}>
+              Login
+            </Button>
           </div>
         </div>
       ) : (
@@ -153,33 +164,38 @@ const FacultyPage = () => {
             <CardContent>
               <p className="text-sm"><strong>Name:</strong> {faculty.name}</p>
               <p className="text-sm"><strong>Designation:</strong> {faculty.designation}</p>
-              <p className="text-sm"><strong>In-Charge Class:</strong> {faculty.inChargeClass}</p>
+              <p className="text-sm">
+                <strong>In-Charge Classes:</strong> {faculty.inCharge.map(c => `${c.name} - ${c.section}`).join(", ")}
+              </p>
             </CardContent>
           </Card>
 
-          {/* Teaching Courses */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <BookOpen className="w-5 h-5 text-blue-600" />
-                Teaching Courses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-disc list-inside space-y-2">
-                {faculty.teaching.map((course: any, index: number) => (
-                  <li key={index} className="text-sm">
-                    {course.course} - <span className="text-gray-600">{course.section}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          {/* Attendance Button */}
-          <Button className="w-full bg-green-600 hover:bg-green-700">
-            Mark Attendance for {faculty.inChargeClass}
-          </Button>
+          {/* In-Charge Classes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {faculty.inCharge.map((cls, idx) => (
+              <Card key={idx} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    {cls.name} - Section {cls.section}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-3">
+                  <Button className="bg-green-600 hover:bg-green-700 w-full">
+                    Upload Attendance
+                  </Button>
+                  <ul className="list-disc list-inside text-sm space-y-1">
+                    {faculty.teaching
+                      .filter(t => t.section === cls.section)
+                      .map((t, i) => (
+                        <li key={i}>
+                          {t.course} - <Button size="sm" className="ml-2">Upload Marks</Button>
+                        </li>
+                      ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       )}
     </div>
