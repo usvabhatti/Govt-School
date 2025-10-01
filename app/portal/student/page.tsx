@@ -7,14 +7,43 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { PageLoading, ButtonLoading } from '@/components/ui/loading/page-loading';
-import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { Eye, EyeOff, Calendar, BookOpen, TrendingUp, Award } from 'lucide-react';
+
+interface AttendanceRecord {
+  id: number;
+  date: string;
+  status: string;
+}
+
+interface Mark {
+  id: number;
+  examType: string;
+  marksObtained: number;
+  totalMarks: number;
+  classSubject: {
+    subject: {
+      id: number;
+      name: string;
+    };
+  };
+}
 
 interface Student {
   id: number;
   name: string;
   cnic: string;
-  attendance: number;
-  marks: number;
+  class: {
+    name: string;
+  };
+  attendance: AttendanceRecord[];
+  marks: Mark[];
+}
+
+interface SubjectData {
+  id: number;
+  name: string;
+  marks: Mark[];
+  average: number;
 }
 
 const StudentPage = () => {
@@ -24,12 +53,57 @@ const StudentPage = () => {
   const [cnic, setCnic] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // New states for the dashboard
+  const [selectedSubject, setSelectedSubject] = useState<SubjectData | null>(null);
+  const [showAttendance, setShowAttendance] = useState(false);
+  const [subjects, setSubjects] = useState<SubjectData[]>([]);
+  const [attendancePercentage, setAttendancePercentage] = useState(0);
 
   useEffect(() => {
     const checkSession = () => {
       const stored = localStorage.getItem('studentUser');
       if (stored) {
-        setUser(JSON.parse(stored) as Student);
+        const student = JSON.parse(stored) as Student;
+        setUser(student);
+        
+        // Process stored data
+        const subjectsMap = new Map<number, SubjectData>();
+        
+        student.marks?.forEach((mark: Mark) => {
+          const subjectId = mark.classSubject.subject.id;
+          const subjectName = mark.classSubject.subject.name;
+          
+          if (!subjectsMap.has(subjectId)) {
+            subjectsMap.set(subjectId, {
+              id: subjectId,
+              name: subjectName,
+              marks: [],
+              average: 0
+            });
+          }
+          
+          subjectsMap.get(subjectId)!.marks.push(mark);
+        });
+        
+        const processedSubjects = Array.from(subjectsMap.values()).map(subject => {
+          const totalPercentage = subject.marks.reduce((sum, mark) => {
+            return sum + (mark.marksObtained / mark.totalMarks) * 100;
+          }, 0);
+          subject.average = subject.marks.length > 0 ? totalPercentage / subject.marks.length : 0;
+          return subject;
+        });
+        
+        const totalAttendance = student.attendance?.length ?? 0;
+        const presentCount = student.attendance?.filter((a: AttendanceRecord) => a.status === 'Present')?.length ?? 0;
+        const attendancePerc = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
+        
+        setSubjects(processedSubjects);
+        setAttendancePercentage(Math.round(attendancePerc));
+        
+        if (processedSubjects.length > 0) {
+          setSelectedSubject(processedSubjects[0]);
+        }
       }
       setLoading(false);
     };
@@ -66,31 +140,49 @@ const StudentPage = () => {
 
       const { student } = await response.json();
       
-      // Safely handle attendance calculation
-      const totalAttendance = student?.attendance?.length ?? 0;
-      const presentCount = student?.attendance?.filter((a: any) => a.status === 'Present')?.length ?? 0;
-      const attendancePercentage = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
-
-      let averageMarks = 0;
-      if (student?.marks?.length > 0) {
-        const totalMarks = student.marks.reduce((sum: number, mark: any) => {
-          const obtained = Number(mark?.marksObtained) || 0;
-          const total = Number(mark?.totalMarks) || 1; // prevent division by zero
-          return sum + (obtained / total) * 100;
+      // Process subjects and marks
+      const subjectsMap = new Map<number, SubjectData>();
+      
+      student.marks.forEach((mark: Mark) => {
+        const subjectId = mark.classSubject.subject.id;
+        const subjectName = mark.classSubject.subject.name;
+        
+        if (!subjectsMap.has(subjectId)) {
+          subjectsMap.set(subjectId, {
+            id: subjectId,
+            name: subjectName,
+            marks: [],
+            average: 0
+          });
+        }
+        
+        subjectsMap.get(subjectId)!.marks.push(mark);
+      });
+      
+      // Calculate averages for each subject
+      const processedSubjects = Array.from(subjectsMap.values()).map(subject => {
+        const totalPercentage = subject.marks.reduce((sum, mark) => {
+          return sum + (mark.marksObtained / mark.totalMarks) * 100;
         }, 0);
-        averageMarks = totalMarks / student.marks.length;
+        subject.average = subject.marks.length > 0 ? totalPercentage / subject.marks.length : 0;
+        return subject;
+      });
+      
+      // Calculate attendance percentage
+      const totalAttendance = student.attendance?.length ?? 0;
+      const presentCount = student.attendance?.filter((a: AttendanceRecord) => a.status === 'Present')?.length ?? 0;
+      const attendancePerc = totalAttendance > 0 ? (presentCount / totalAttendance) * 100 : 0;
+      
+      setSubjects(processedSubjects);
+      setAttendancePercentage(Math.round(attendancePerc));
+      
+      // Set default selected subject (first one)
+      if (processedSubjects.length > 0) {
+        setSelectedSubject(processedSubjects[0]);
       }
 
-      const userData: Student = {
-        id: student.id,
-        name: student.name,
-        cnic: student.cnic,
-        attendance: Math.round(attendancePercentage),
-        marks: Math.round(averageMarks),
-      };
-
-      localStorage.setItem('studentUser', JSON.stringify(userData));
-      setUser(userData);
+      localStorage.setItem('studentUser', JSON.stringify(student));
+      setUser(student);
       toast.success('Login successful!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to login');
@@ -104,6 +196,10 @@ const StudentPage = () => {
     setUser(null);
     setCnic('');
     setPassword('');
+    setSubjects([]);
+    setSelectedSubject(null);
+    setShowAttendance(false);
+    setAttendancePercentage(0);
   };
 
   if (loading) {
@@ -114,158 +210,240 @@ const StudentPage = () => {
     );
   }
 
-  const assignments = [
-    { subject: 'English', lesson: 'Lesson 2', progress: 0, date: '25th Jan 2024' },
-    { subject: 'Mathematics', lesson: 'Integration', progress: 35, date: '26th Jan 2024' },
-    { subject: 'History', lesson: 'Medieval Era', progress: 80, date: '27th Jan 2024' }
-  ];
-
-  const tasks = [
-    { text: 'Upload Assignment', colorClass: 'bg-orange-500' },
-    { text: 'Study for Quiz', colorClass: 'bg-green-500' },
-    { text: 'Paragraph Corrections', colorClass: 'bg-purple-500' },
-    { text: 'Spell Check English', colorClass: 'bg-red-500' }
-  ];
-
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <header className="flex justify-between items-center pb-3 mb-4">
-        {user && (
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <span className="text-sm sm:text-base">Hi, {user.name}</span>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
+    <div className="min-h-screen bg-white">
+      {user ? (
+        <div className="p-4 sm:p-6">
+          {/* Header with Logout */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Student Portal</h1>
+              <p className="text-sm text-gray-500">{user.class.name}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleLogout} className="shadow-sm">
               Logout
             </Button>
           </div>
-        )}
-      </header>
 
-      {user ? (
-        <div className="min-h-screen bg-white p-6">
-          {/* Top Bar */}
-          <div className="flex justify-between items-center mb-8">
-            <div className="relative w-full max-w-md">
-              <input
-                type="text"
-                placeholder="What do you want to learn today?"
-                className="w-full py-3 px-5 pr-12 rounded-xl border border-gray-200 bg-white shadow-sm focus:ring-2 focus:ring-blue-100 outline-none"
-              />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.3-4.3"/>
-                </svg>
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-[10px] text-white rounded-full flex items-center justify-center">
-                  2
-                </span>
-                <button className="text-gray-600 hover:text-gray-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                  </svg>
-                </button>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-                {user.name.charAt(0)}
-              </div>
-            </div>
-          </div>
-
-          {/* Welcome Section */}
-          <div className="bg-white rounded-2xl p-6 mb-8 shadow-sm">
+          {/* Welcome Card */}
+          <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 mb-6 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold mb-2">Hi {user.name}</h1>
-                <p className="text-gray-600">
-                  You have completed <span className="text-blue-600 font-medium">{user.attendance}%</span> of your weekly targets
-                </p>
-                <button className="mt-4 px-6 py-2 bg-[#ffd700] rounded-xl text-gray-800 font-medium hover:bg-[#ffd700]/90 transition-colors">
-                  Set Goals
-                </button>
+                <h2 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h2>
+                <p className="text-green-50">Here's your academic overview</p>
               </div>
               <div className="hidden md:block">
-                <Image
-                  src="/st_login_img.png"
-                  alt="Student studying"
-                  width={200}
-                  height={200}
-                  className="animate-float"
-                />
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl font-bold">
+                  {user.name.charAt(0)}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Assignments Section */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Your Assignments</h2>
-              <button className="text-blue-600 text-sm hover:underline">View More</button>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            {/* Attendance Card */}
+            <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Attendance</p>
+                  <p className="text-2xl font-bold text-gray-800">{attendancePercentage}%</p>
+                </div>
+              </div>
+              <Progress value={attendancePercentage} className="h-2 bg-gray-100 [&>div]:bg-blue-500" />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {assignments.map((assignment, i) => (
-                <div key={i} className="bg-white p-5 rounded-2xl shadow-sm">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-medium mb-1">{assignment.subject}</h3>
-                      <p className="text-sm text-gray-500">{assignment.lesson}</p>
+
+            {/* Subjects Count Card */}
+            <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Subjects</p>
+                  <p className="text-2xl font-bold text-gray-800">{subjects.length}</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Total enrolled subjects</p>
+            </div>
+
+            {/* Average Performance Card */}
+            <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100 hover:shadow-lg transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Avg Performance</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {subjects.length > 0 
+                      ? Math.round(subjects.reduce((sum, s) => sum + s.average, 0) / subjects.length) 
+                      : 0}%
+                  </p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Across all subjects</p>
+            </div>
+          </div>
+
+          {/* Main Content - Attendance or Grades */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Side - Subject Buttons */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl p-5 shadow-md border border-gray-100">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">My Subjects</h3>
+                <div className="space-y-2">
+                  {subjects.map((subject) => (
+                    <button
+                      key={subject.id}
+                      onClick={() => {
+                        setSelectedSubject(subject);
+                        setShowAttendance(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                        selectedSubject?.id === subject.id && !showAttendance
+                          ? 'bg-green-500 text-white shadow-md'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{subject.name}</span>
+                        <span className="text-sm font-semibold">{Math.round(subject.average)}%</span>
+                      </div>
+                    </button>
+                  ))}
+                  
+                  {/* Attendance Button */}
+                  <button
+                    onClick={() => setShowAttendance(true)}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
+                      showAttendance
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5" />
+                      <span className="font-medium">View Attendance</span>
                     </div>
-                    <span className="text-xs text-gray-400">{assignment.date}</span>
-                  </div>
-                  <Progress value={assignment.progress} className="h-2 bg-gray-100 [&>div]:bg-blue-500" />
-                  <p className="text-xs text-gray-500 mt-2">{assignment.progress}% Complete</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Left: Lessons */}
-            <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm">
-              <h2 className="text-xl font-bold mb-4">Lessons for you</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-[#fff4d9] p-6 rounded-xl">
-                  <div className="mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-                    </svg>
-                  </div>
-                  <h3 className="font-bold mb-1">Focus Words</h3>
-                  <p className="text-sm text-gray-600">English</p>
-                </div>
-                <div className="bg-[#ffe8e8] p-6 rounded-xl">
-                  <div className="mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                      <circle cx="9" cy="7" r="4"/>
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                  </div>
-                  <h3 className="font-bold mb-1">Workshops</h3>
-                  <p className="text-sm text-gray-600">Extra Curricular</p>
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Right: Tasks */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold">Your Tasks Today</h3>
-                <button className="text-blue-600 text-sm hover:underline">+ Create New</button>
-              </div>
-              <div className="space-y-4">
-                {tasks.map((task, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-full ${task.colorClass}`} />
-                    <span className="text-sm text-gray-600">{task.text}</span>
+            {/* Right Side - Details View */}
+            <div className="lg:col-span-2">
+              {showAttendance ? (
+                /* Attendance Details */
+                <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Calendar className="w-6 h-6 text-blue-600" />
+                    <h3 className="text-xl font-bold text-gray-800">Attendance Record</h3>
                   </div>
-                ))}
-              </div>
+                  
+                  <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Overall Attendance</span>
+                      <span className="text-2xl font-bold text-blue-600">{attendancePercentage}%</span>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Present: {user.attendance.filter(a => a.status === 'Present').length} | 
+                      Absent: {user.attendance.filter(a => a.status === 'Absent').length} | 
+                      Total: {user.attendance.length} days
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {user.attendance.length === 0 ? (
+                      <p className="text-center text-gray-500 py-8">No attendance records yet</p>
+                    ) : (
+                      user.attendance
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((record) => (
+                          <div
+                            key={record.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-3 h-3 rounded-full ${
+                                record.status === 'Present' ? 'bg-green-500' : 'bg-red-500'
+                              }`} />
+                              <span className="font-medium text-gray-700">
+                                {new Date(record.date).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              record.status === 'Present' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {record.status}
+                            </span>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </div>
+              ) : selectedSubject ? (
+                /* Subject Marks Details */
+                <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <Award className="w-6 h-6 text-green-600" />
+                      <h3 className="text-xl font-bold text-gray-800">{selectedSubject.name}</h3>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500">Average Score</p>
+                      <p className="text-3xl font-bold text-green-600">{Math.round(selectedSubject.average)}%</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {selectedSubject.marks.length === 0 ? (
+                      <p className="text-center text-gray-500 py-8">No marks recorded yet</p>
+                    ) : (
+                      selectedSubject.marks.map((mark) => (
+                        <div
+                          key={mark.id}
+                          className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold text-gray-800">{mark.examType}</span>
+                            <span className="text-lg font-bold text-gray-800">
+                              {mark.marksObtained} / {mark.totalMarks}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Progress 
+                              value={(mark.marksObtained / mark.totalMarks) * 100} 
+                              className="flex-1 h-2 bg-gray-200 [&>div]:bg-green-500" 
+                            />
+                            <span className="text-sm font-semibold text-green-600">
+                              {Math.round((mark.marksObtained / mark.totalMarks) * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* No Subject Selected */
+                <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100 flex items-center justify-center h-full min-h-[300px]">
+                  <div className="text-center">
+                    <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">Select a subject to view marks</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
