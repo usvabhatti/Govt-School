@@ -4,12 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "ts-node prisma/seed/index.ts"
+    "seed": "ts-node prisma/seed/index.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/client": "^5.10.2",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
@@ -31,7 +33,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@prisma/client": "^5.10.2",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
