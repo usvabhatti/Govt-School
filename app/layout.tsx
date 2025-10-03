@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "../component/navbar";
 import TopBar from "@/component/top_bar";
+import { Toaster } from 'sonner';
 
 import { Poppins, Lora } from "next/font/google";
 import Footer from "@/component/footer";
@@ -35,6 +36,7 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Footer/>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

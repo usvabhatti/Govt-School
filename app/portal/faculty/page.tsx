@@ -111,7 +111,7 @@ const FacultyPage = () => {
       {/* Login Form */}
       {!faculty ? (
         <div className="min-h-[70vh] flex items-center justify-center">
-          <div className="bg-amber-100 p-6 sm:p-8 rounded-3xl shadow-xl w-[700px] max-w-md grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <div className="bg-yellow-50 p-6 sm:p-8 rounded-3xl shadow-xl w-[600px] grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
             
             {/* Left Side: Form */}
             <div>

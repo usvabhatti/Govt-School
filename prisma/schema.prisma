@@ -1,0 +1,126 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Class {
+  id         Int            @id @default(autoincrement())
+  name       String
+  inchargeId Int?           // current incharge (nullable)
+  incharge   Teacher?       @relation("Incharge", fields: [inchargeId], references: [id])
+  students   Student[]
+  subjects   ClassSubject[]
+  attendance Attendance[]
+
+  // Audit log of who was made incharge (see AssignmentAudit)
+  audits     AssignmentAudit[]
+}
+
+model Student {
+  id        Int             @id @default(autoincrement())
+  name      String
+  cnic      String         @unique  // National ID for login
+  passwordHash String       // store bcrypt/scrypt/argon2 hash, NOT plaintext
+  classId   Int
+  class     Class           @relation(fields: [classId], references: [id])
+  subjects  StudentSubject[]
+  attendance Attendance[]
+  marks     Mark[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  
+  @@index([cnic])
+}
+
+model Teacher {
+  id        Int             @id @default(autoincrement())
+  name      String
+  cnic      String          @unique  // National ID for login
+  passwordHash String       // store bcrypt/scrypt/argon2 hash, NOT plaintext
+  inchargeOf Class[]        @relation("Incharge")
+  teaches   ClassSubject[]
+  attendanceMarked Attendance[] @relation("MarkedBy")
+  assignments AssignmentAudit[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([cnic])
+}
+
+model Admin {
+  id           Int     @id @default(autoincrement())
+  name         String
+  cnic         String  @unique  // National ID for login
+  passwordHash String  // store hashed password
+  createdAt    DateTime @default(now())
+  assignments AssignmentAudit[]
+
+  @@index([cnic])
+}
+
+model Subject {
+  id        Int       @id @default(autoincrement())
+  name      String
+  classes   ClassSubject[]
+}
+
+model ClassSubject {
+  id        Int       @id @default(autoincrement())
+  classId   Int
+  subjectId Int
+  teacherId Int
+  class     Class     @relation(fields: [classId], references: [id])
+  subject   Subject   @relation(fields: [subjectId], references: [id])
+  teacher   Teacher   @relation(fields: [teacherId], references: [id])
+  students  StudentSubject[]
+  marks     Mark[]
+}
+
+model StudentSubject {
+  id             Int    @id @default(autoincrement())
+  studentId      Int
+  classSubjectId Int
+  student        Student      @relation(fields: [studentId], references: [id])
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id])
+}
+
+model Attendance {
+  id         Int      @id @default(autoincrement())
+  studentId  Int
+  classId    Int
+  date       DateTime
+  status     String   // 'Present' | 'Absent' | 'Late' etc.
+  markedById Int?     // teacher who marked it (likely the incharge)
+  student    Student  @relation(fields: [studentId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
+  markedBy   Teacher? @relation("MarkedBy", fields: [markedById], references: [id])
+}
+
+model Mark {
+  id             Int    @id @default(autoincrement())
+  studentId      Int
+  classSubjectId Int
+  examType       String
+  marksObtained  Float
+  totalMarks     Float
+  student        Student      @relation(fields: [studentId], references: [id])
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id])
+}
+
+model AssignmentAudit {
+  id         Int      @id @default(autoincrement())
+  classId    Int
+  teacherId  Int
+  assignedBy Int      // Admin.id who performed the assignment
+  assignedAt DateTime @default(now())
+
+  class      Class    @relation(fields: [classId], references: [id])
+  teacher    Teacher  @relation(fields: [teacherId], references: [id])
+  admin      Admin    @relation(fields: [assignedBy], references: [id])
+}
