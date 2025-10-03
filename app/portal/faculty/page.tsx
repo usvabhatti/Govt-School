@@ -127,7 +127,7 @@ const FacultyPage = () => {
                   placeholder="Enter 13 digit CNIC"
                   value={cnic}
                   onChange={(e) => setCnic(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md 
+                  className=" shadow-green-300/50 w-full px-3 py-2 border border-gray-300 rounded-md 
                              focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base"
                 />
                 <p className="text-xs text-gray-500 mt-1">

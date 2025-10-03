@@ -103,7 +103,7 @@ export default function StudentPage() {
                   placeholder="Enter 13 digit CNIC"
                   value={cnic}
                   onChange={(e) => setCnic(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md 
+                  className="w-full px-3 py-2 shadow-md shadow-green-300/50 border border-gray-300 rounded-md 
                              focus:outline-none focus:ring-2 focus:ring-green-400 text-sm sm:text-base"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -119,7 +119,7 @@ export default function StudentPage() {
                   placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md 
+                  className="w-full shadow-md shadow-green-300/50 px-3 py-2 border border-gray-300 rounded-md 
                              focus:outline-none focus:ring-2 focus:ring-green-400 pr-10 text-sm sm:text-base"
                 />
                 <span
