@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { comparePassword } from "@/lib/auth/password";
+import { verifyPassword } from "@/lib/auth/password";
 
 export async function POST(request: NextRequest) {
     try {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const isPasswordValid = await comparePassword(password, admin.password);
+        const isPasswordValid = await verifyPassword(password, admin.passwordHash);
 
         if (!isPasswordValid) {
             return NextResponse.json(
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
                 message: "Login successful",
                 admin: {
                     id: admin.id,
+                    name: admin.name,
                     cnic: admin.cnic,
                 },
             },
